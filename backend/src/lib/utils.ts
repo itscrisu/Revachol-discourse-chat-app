@@ -1,7 +1,7 @@
-import { Response } from 'express';
+import { RequestHandler, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import { Types } from 'mongoose';
-
+import type { AsyncRequestHandler } from '../types/auth';
 export const generateToken = (userId: string | Types.ObjectId, res: Response) => {
   const jwtSecret = process.env.JWT_SECRET;
   if (!jwtSecret) {
@@ -21,3 +21,13 @@ export const generateToken = (userId: string | Types.ObjectId, res: Response) =>
 
   return token;
 }
+
+export const wrapHandler = (handler: AsyncRequestHandler): RequestHandler => {
+  return async (req, res, next) => {
+    try {
+      await handler(req, res, next);
+    } catch (err) {
+      next(err);
+    }
+  };
+};
