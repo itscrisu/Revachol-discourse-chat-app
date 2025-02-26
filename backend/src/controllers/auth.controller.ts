@@ -50,10 +50,50 @@ export const signup = async (req: Request, res: Response, next: NextFunction) =>
   }
 };
 
-export const login = (req: Request, res: Response) => {
-  res.send('login route');
+export const login = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { email, password } = req.body;
+
+    const user = await User.findOne({ email });
+    
+    if (!user) {
+      return res.status(401).json({ error: 'Invalid email or password' });
+    }
+
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+
+    if (!isPasswordValid) {
+      return res.status(401).json({ error: 'Invalid email or password' });
+    }
+
+    generateToken(user._id, res);
+
+    return res.status(200).json({
+      _id: user._id,
+      fullName: user.fullName,
+      email: user.email,
+      profilePic: user.profilePic,
+    });
+    
+  } catch (error) {
+    console.error('Login error (controller):', error instanceof Error ? error.message : 'Unknown error');
+    res.status(500).json({ error: 'Internal server error' });
+    next(error);
+  }
 };
 
-export const logout = (req: Request, res: Response) => {
-  res.send('logout route');
+export const logout = (req: Request, res: Response, next: NextFunction) => {
+  try {
+    res.cookie('jwt', '', {
+      maxAge: 0,
+      httpOnly: true,
+      expires: new Date(0),
+    });
+
+    return res.status(200).json({ message: 'Logged out successfully' });
+  } catch (error) {
+    console.error('Logout error (controller):', error instanceof Error ? error.message : 'Unknown error');
+    res.status(500).json({ error: 'Internal server error' });
+    next(error);
+  }
 };

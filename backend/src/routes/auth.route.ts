@@ -11,8 +11,20 @@ router.post('/signup', async (req: Request, res: Response, next: NextFunction) =
   }
 });
 
-router.post('/login', login);
+router.post('/login', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    await login(req, res, next);
+  } catch (error) {
+    next(error);
+  }
+});
 
-router.post('/logout', logout);
+router.post('/logout', (req: Request, res: Response, next: NextFunction) => {
+  try {
+    logout(req, res, next);
+  } catch (error) {
+    next(error);
+  }
+});
 
 export default router;
