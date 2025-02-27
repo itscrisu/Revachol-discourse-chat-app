@@ -19,6 +19,8 @@ export const getMessages = async (req: AuthRequest, res: Response) => {
   try {
     const { id: userToChatId } = req.params; // format name for better understanding
     const myId = req.user._id;
+    // find messages between logged in user and user to chat
+    // $or operator is used to find messages between two users
     const messages = await Message.find({
       $or: [
         { senderId: myId, receiverId: userToChatId },
@@ -43,7 +45,6 @@ export const sendMessage = async (req: AuthRequest, res: Response) => {
       const uploadResponse = await cloudinary.uploader.upload(image);
       imageUrl = uploadResponse.secure_url;
     }
-
       const newMessage = new Message({
         senderId,
         receiverId,
