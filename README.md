@@ -8,7 +8,7 @@ A modern real-time chat application built with a powerful tech stack, featuring 
 - **MERN** stack
 - **Socket.io-client** for real-time communication
 - **TailwindCSS** for styling
-- **DaisyUI** for components
+- **Shadcn/UI** for components
 - **Zustand** for state management
 
 ### Backend
