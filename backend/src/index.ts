@@ -1,7 +1,8 @@
 import dotenv from 'dotenv';
-import express, { Application, Request, Response } from 'express';
+import express, { Application } from 'express';
 import { connectDB } from './lib/db';
 import authRoutes from './routes/auth.route';
+import messageRoutes from './routes/message.route';
 
 dotenv.config();
 
@@ -10,6 +11,7 @@ const PORT = process.env.PORT;
 
 app.use(express.json());
 app.use('/api/auth', authRoutes);
+app.use('/api/message', messageRoutes);
 
 app.listen(PORT, () => {
   console.log(`server running on port: ${PORT}`);

@@ -115,8 +115,8 @@ export const updateProfile = async (req: AuthRequest, res: Response, next: NextF
       profilePic: uploadResponse.secure_url}, {new: true});
 
       res.status(200).json({updatedUser});
-    } catch (error) {
-      console.log('error in update profile controller', error);
+    } catch (error: unknown) {
+      console.error('Error in update profile controller:', error instanceof Error ? error.message : 'Unknown error');
       res.status(500).json({ error: 'Internal server error' });
       next(error);
     }
@@ -125,8 +125,8 @@ export const updateProfile = async (req: AuthRequest, res: Response, next: NextF
 export const checkAuth = (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     res.status(200).json(req.user);
-  } catch (error) {
-    console.log('error in check auth controller', error);
+  } catch (error: unknown) {
+    console.error('Error in check auth controller:', error instanceof Error ? error.message : 'Unknown error');
     res.status(500).json({ error: 'Internal server error' });
     next(error);
   }

@@ -5,11 +5,7 @@ export const connectDB = async (): Promise<void> => {
     const conn = await mongoose.connect(process.env.MONGODB_URI as string);
     console.log(`Connected to MongoDB at: ${conn.connection.host}`);
   } catch (error: unknown) {
-    if (error instanceof Error) {
-      console.error("MongoDB connection error:", error.message);
-    } else {
-      console.error("Unknown MongoDB connection error occurred");
-    }
+    console.error('Error connecting to MongoDB:', error instanceof Error ? error.message : 'Unknown error');
     process.exit(1);
   }
 };

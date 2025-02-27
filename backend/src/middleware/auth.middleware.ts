@@ -35,7 +35,8 @@ export const protectRoute = async (req: AuthRequest, res: Response, next: NextFu
   };
 
   next()
- } catch (error) {
+ } catch (error: unknown) {
+  console.error('Error in protectRoute middleware:', error instanceof Error ? error.message : 'Unknown error');
   res.status(401).json({ error: 'Unauthorized' });
  }
 }
