@@ -1,133 +1,117 @@
-import bcrypt from 'bcryptjs';
-import { v2 as cloudinary } from 'cloudinary';
-import { NextFunction, Request, Response } from 'express';
-import { generateToken } from '../lib/utils';
-import User from '../models/user.model';
-import type { AuthRequest } from '../types/auth';
+import bcryptjs from "bcryptjs";
+import { Request, Response } from "express";
+import prisma from "../lib/db.js";
+import { generateToken } from "../utils/generateToken.js";
 
-export const signup = async (req: Request, res: Response, next: NextFunction) => {
-  const { email, password, fullName } = req.body;
-  try {
+export const signup = async (req: Request, res: Response) => {
+	try {
+		const { fullName, username, password, confirmPassword, gender } = req.body;
 
-    if (!fullName || !email || !password){
-      return res.status(400).json({ error: 'All fields are required' });
-    }
-    
-    if(password.length < 6) {
-      return res.status(400).json({ error: 'Password must be at least 6 characters long' });
-    }
-    
-    const user = await User.findOne({ email });
+		if (!fullName || !username || !password || !confirmPassword || !gender) {
+			return res.status(400).json({ error: "Please fill in all fields" });
+		}
 
-    if (user) {
-      return res.status(400).json({ error: 'User already exists' });
-    }
+		if (password !== confirmPassword) {
+			return res.status(400).json({ error: "Passwords don't match" });
+		}
 
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
+		const user = await prisma.user.findUnique({ where: { username } });
 
-    const newUser = new User({
-      fullName: fullName,
-      email: email, 
-      password: hashedPassword
-    });
+		if (user) {
+			return res.status(400).json({ error: "Username already exists" });
+		}
 
-    if (newUser) {
-      generateToken(newUser._id, res);
-      await newUser.save();
-      
-      return res.status(201).json({ 
-        _id: newUser._id,
-        fullName: newUser.fullName,
-        email: newUser.email,
-        profilePic: newUser.profilePic,
-       });
-    } else {
-      return res.status(500).json({ error: 'Failed to save user'});
-    }
-  } catch (error) {
-    console.error('Signup error (controller):', error instanceof Error ? error.message : 'Unknown error');
-    res.status(500).json({ error: 'Internal server error' });
-    next(error);
-  }
+		const salt = await bcryptjs.genSalt(10); // common value that everyone uses
+		const hashedPassword = await bcryptjs.hash(password, salt); // hash the password
+
+		// https://avatar-placeholder.iran.liara.run/
+		// !TODO probably add one more for gender neutral
+		const boyProfilePic = `https://avatar.iran.liara.run/public/boy?username=${username}`;
+		const girlProfilePic = `https://avatar.iran.liara.run/public/girl?username=${username}`;
+
+		const newUser = await prisma.user.create({
+			data: {
+				fullName,
+				username,
+				password: hashedPassword,
+				gender,
+				profilePic: gender === "male" ? boyProfilePic : girlProfilePic,
+			},
+		});
+
+		if (newUser) {
+			generateToken(newUser.id, res);
+
+			res.status(201).json({
+				id: newUser.id,
+				fullName: newUser.fullName,
+				username: newUser.username,
+				profilePic: newUser.profilePic,
+			});
+		} else {
+			res.status(400).json({ error: "Invalid user data" });
+		}
+	} catch (error: unknown) {
+		console.log("Error in signup controller", error instanceof Error ? error.message : "Unknown error");
+		res.status(500).json({ error: "Internal Server Error" });
+	}
 };
 
-export const login = async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const { email, password } = req.body;
+export const login = async (req: Request, res: Response) => {
+	try {
+		const { username, password } = req.body;
+		const user = await prisma.user.findUnique({ where: { username } });
 
-    const user = await User.findOne({ email });
-    
-    if (!user) {
-      return res.status(401).json({ error: 'Invalid email or password' });
-    }
+		if (!user) {
+			return res.status(400).json({ error: "Invalid credentials" });
+		}
 
-    const isPasswordValid = await bcrypt.compare(password, user.password);
+		const isPasswordCorrect = await bcryptjs.compare(password, user.password);
 
-    if (!isPasswordValid) {
-      return res.status(401).json({ error: 'Invalid email or password' });
-    }
+		if (!isPasswordCorrect) {
+			return res.status(400).json({ error: "Invalid credentials" });
+		}
 
-    generateToken(user._id, res);
+		generateToken(user.id, res);
 
-    return res.status(200).json({
-      _id: user._id,
-      fullName: user.fullName,
-      email: user.email,
-      profilePic: user.profilePic,
-    });
-    
-  } catch (error) {
-    console.error('Login error (controller):', error instanceof Error ? error.message : 'Unknown error');
-    res.status(500).json({ error: 'Internal server error' });
-    next(error);
-  }
+		res.status(200).json({
+			id: user.id,
+			fullName: user.fullName,
+			username: user.username,
+			profilePic: user.profilePic,
+		});
+	} catch (error: unknown) {
+		console.log("Error in login controller", error instanceof Error ? error.message : "Unknown error");
+		res.status(500).json({ error: "Internal Server Error" });
+	}
 };
 
-export const logout = (req: Request, res: Response, next: NextFunction) => {
-  try {
-    res.cookie('jwt', '', {
-      maxAge: 0,
-      httpOnly: true,
-      expires: new Date(0),
-    });
-
-    return res.status(200).json({ message: 'Logged out successfully' });
-  } catch (error) {
-    console.error('Logout error (controller):', error instanceof Error ? error.message : 'Unknown error');
-    res.status(500).json({ error: 'Internal server error' });
-    next(error);
-  }
+export const logout = async (req: Request, res: Response) => {
+	try {
+		res.cookie("jwt", "", { maxAge: 0 });
+		res.status(200).json({ message: "Logged out successfully" });
+	} catch (error: unknown) {
+		console.log("Error in logout controller", error instanceof Error ? error.message : "Unknown error");
+		res.status(500).json({ error: "Internal Server Error" });
+	}
 };
 
-export const updateProfile = async (req: AuthRequest, res: Response, next: NextFunction) => {
-  try {
-    const { profilePic } = req.body;
+export const getMe = async (req: Request, res: Response) => {
+	try {
+		const user = await prisma.user.findUnique({ where: { id: req.user.id } });
 
-    const userId = req.user._id;
+		if (!user) {
+			return res.status(404).json({ error: "User not found" });
+		}
 
-    if(!profilePic) {
-      return res.status(400).json({ error: 'Profile picture is required' });
-    }
-
-    const uploadResponse = await cloudinary.uploader.upload(profilePic)
-    const updatedUser = await User.findByIdAndUpdate(userId, {
-      profilePic: uploadResponse.secure_url}, {new: true});
-
-      res.status(200).json({updatedUser});
-    } catch (error: unknown) {
-      console.error('Error in update profile controller:', error instanceof Error ? error.message : 'Unknown error');
-      res.status(500).json({ error: 'Internal server error' });
-      next(error);
-    }
+		res.status(200).json({
+			id: user.id,
+			fullName: user.fullName,
+			username: user.username,
+			profilePic: user.profilePic,
+		});
+	} catch (error: unknown) {
+		console.log("Error in getMe controller", error instanceof Error ? error.message : "Unknown error");
+		res.status(500).json({ error: "Internal Server Error" });
+	}
 };
-
-export const checkAuth = (req: AuthRequest, res: Response, next: NextFunction) => {
-  try {
-    res.status(200).json(req.user);
-  } catch (error: unknown) {
-    console.error('Error in check auth controller:', error instanceof Error ? error.message : 'Unknown error');
-    res.status(500).json({ error: 'Internal server error' });
-    next(error);
-  }
-}

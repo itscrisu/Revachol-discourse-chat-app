@@ -1,33 +1,19 @@
-import { RequestHandler, Response } from 'express';
-import jwt from 'jsonwebtoken';
-import { Types } from 'mongoose';
-import type { AsyncRequestHandler } from '../types/auth';
-export const generateToken = (userId: string | Types.ObjectId, res: Response) => {
-  const jwtSecret = process.env.JWT_SECRET;
-  if (!jwtSecret) {
-    throw new Error('JWT_SECRET is not defined in environment variables');
-  }
+import { Response } from "express";
+import jwt from "jsonwebtoken";
 
-  const token = jwt.sign({ userId: userId.toString() }, jwtSecret, {
-    expiresIn: '7d',
-  });
+const generateToken = (userId: string, res: Response) => {
+	const token = jwt.sign({ userId }, process.env.JWT_SECRET!, {
+		expiresIn: "15d",
+	});
 
-  res.cookie('jwt', token, {
-    maxAge: 7 * 24 * 60 * 60 * 1000,
-    httpOnly: true, // prevents XSS attacks cross-site scripting
-    sameSite: 'strict', // CSRF attacks cross-site request forgery
-    secure: process.env.NODE_ENV !== 'development',
-  });
+	res.cookie("jwt", token, {
+		maxAge: 15 * 24 * 60 * 60 * 1000,
+		httpOnly: true, // prevent XSS cross site scripting
+		sameSite: "strict", // CSRF attack cross-site request forgery
+		secure: process.env.NODE_ENV !== "development", // HTTPS
+	});
 
-  return token;
-}
-
-export const wrapHandler = (handler: AsyncRequestHandler): RequestHandler => {
-  return async (req, res, next) => {
-    try {
-      await handler(req, res, next);
-    } catch (error) {
-      next(error);
-    }
-  };
+	return token;
 };
+
+export default generateToken;

@@ -1,64 +1,119 @@
-import { v2 as cloudinary } from 'cloudinary';
-import type { Response } from 'express';
-import Message from '../models/message.model';
-import User from '../models/user.model';
-import type { AuthRequest } from '../types/auth';
+import { Request, Response } from "express";
+import prisma from "../lib/db.js";
+import { getReceiverSocketId, io } from "../socket/socket.js";
 
-export const getUsersFromSidebar = async (req: AuthRequest, res: Response) => {
-  try {
-    const loggedInUserId = req.user._id;
-    const filteredUsers = await User.find({ _id: { $ne: loggedInUserId } });
-    res.status(200).json(filteredUsers);
-  } catch (error: unknown) {
-    console.error('Error fetching users from sidebar:', error instanceof Error ? error.message : 'Unknown error');
-    res.status(500).json({ message: 'Internal server error' });
-  }
+export const sendMessage = async (req: Request, res: Response) => {
+	try {
+		const { message } = req.body;
+		const { id: receiverId } = req.params;
+		const senderId = req.user.id;
+
+		let conversation = await prisma.conversation.findFirst({
+			where: {
+				participantIds: {
+					hasEvery: [senderId, receiverId],
+				},
+			},
+		});
+
+		// the very first message is being sent, that's why we need to create a new conversation
+		if (!conversation) {
+			conversation = await prisma.conversation.create({
+				data: {
+					participantIds: {
+						set: [senderId, receiverId],
+					},
+				},
+			});
+		}
+
+		const newMessage = await prisma.message.create({
+			data: {
+				senderId,
+				body: message,
+				conversationId: conversation.id,
+			},
+		});
+
+		if (newMessage) {
+			conversation = await prisma.conversation.update({
+				where: {
+					id: conversation.id,
+				},
+				data: {
+					messages: {
+						connect: {
+							id: newMessage.id,
+						},
+					},
+				},
+			});
+		}
+
+		const receiverSocketId = getReceiverSocketId(receiverId);
+
+		if (receiverSocketId) {
+			io.to(receiverSocketId).emit("newMessage", newMessage);
+		}
+
+		res.status(201).json(newMessage);
+	} catch (error: unknown) {
+		console.error("Error in sendMessage: ", error instanceof Error ? error.message : "Unknown error");
+		res.status(500).json({ error: "Internal server error" });
+	}
 };
 
-export const getMessages = async (req: AuthRequest, res: Response) => {
-  try {
-    const { id: userToChatId } = req.params; // format name for better understanding
-    const myId = req.user._id;
-    // find messages between logged in user and user to chat
-    // $or operator is used to find messages between two users
-    const messages = await Message.find({
-      $or: [
-        { senderId: myId, receiverId: userToChatId },
-        { senderId: userToChatId, receiverId: myId },
-      ],
-    });
-    res.status(200).json(messages);
-  } catch (error: unknown) {
-    console.error('Error fetching messages:', error instanceof Error ? error.message : 'Unknown error');
-    res.status(500).json({ message: 'Internal server error' });
-  }
+export const getMessages = async (req: Request, res: Response) => {
+	try {
+		const { id: userToChatId } = req.params;
+		const senderId = req.user.id;
+
+		const conversation = await prisma.conversation.findFirst({
+			where: {
+				participantIds: {
+					hasEvery: [senderId, userToChatId],
+				},
+			},
+			include: {
+				messages: {
+					orderBy: {
+						createdAt: "asc",
+					},
+				},
+			},
+		});
+
+		if (!conversation) {
+			return res.status(200).json([]);
+		}
+
+		res.status(200).json(conversation.messages);
+	} catch (error: unknown) {
+		console.error("Error in getMessages: ", error instanceof Error ? error.message : "Unknown error");
+		res.status(500).json({ error: "Internal server error" });
+	}
 };
 
-export const sendMessage = async (req: AuthRequest, res: Response) => {
-  try {
-    const { text, image } = req.body;
-    const { id: receiverId } = req.params; // rename for better understanding
-    const senderId = req.user._id;
+export const getUsersForSidebar = async (req: Request, res: Response) => {
+	try {
+		const authUserId = req.user.id;
 
-    let imageUrl;
-    if(image) {
-      const uploadResponse = await cloudinary.uploader.upload(image);
-      imageUrl = uploadResponse.secure_url;
-    }
-      const newMessage = new Message({
-        senderId,
-        receiverId,
-        text,
-        image: imageUrl,
-      });
-      await newMessage.save();
+		const users = await prisma.user.findMany({
+			where: {
+				id: {
+					not: authUserId,
+				},
+			},
+			select: {
+				id: true,
+				fullName: true,
+				profilePic: true,
+			},
+		});
 
-      // TODO: add realtime functionality after installing socket.io
-
-      res.status(201).json(newMessage);
-      
-  } catch (error: unknown) {
-    console.error('Error sending message:', error instanceof Error ? error.message : 'Unknown error');
-    res.status(500).json({ message: 'Internal server error' });
-  }
-}
+		res.status(200).json(users);
+	} catch (error: unknown) {
+		console.error("Error in getUsersForSidebar: ", error instanceof Error ? error.message : "Unknown error");
+		res.status(500).json({ error: "Internal server error" });
+	}
+};

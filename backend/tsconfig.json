@@ -1,24 +1,17 @@
 {
   "compilerOptions": {
-    "target": "ES2020",
-    "module": "CommonJS",
-    "moduleResolution": "node",
-    "outDir": "./dist",
-    "rootDir": "./src",
-    "strict": true,
-    "esModuleInterop": true,
-    "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true,
-    "resolveJsonModule": true,
-    "allowJs": true,
-    "checkJs": true,
-    "baseUrl": ".",
-    "typeRoots": ["./node_modules/@types"],
-    "types": ["node", "express"],
-    "paths": {
-      "*": ["node_modules/*"]
-    }
+    "target": "ES2020", // Specifies version of ECMAScript the code should compile in
+    "module": "NodeNext", // What module code should be generated
+    "moduleResolution": "NodeNext", // how ts should resolve module imports
+    "outDir": "./dist", // redirect output structure to directory
+    "rootDir": ".", // relative to tsconfig.json location
+    "strict": true, // enable all strict type-checking options
+    "esModuleInterop": true, // allow use of default imports with CommonJS modules
+    "skipLibCheck": true // skip type checking all .d.ts files
   },
-  "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist"]
+  "ts-node": {
+    "esm": true
+  },
+  "include": ["src/**/*"], // include all files when compiling the project
+  "exclude": ["node_modules", "**/*.spec.ts", "frontend"]
 }

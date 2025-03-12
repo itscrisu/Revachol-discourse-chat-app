@@ -1,42 +1,52 @@
-import { NextFunction, Response } from 'express';
-import jwt from 'jsonwebtoken';
-import User from '../models/user.model';
-import type { AuthRequest } from '../types/auth';
+import jwt, { JwtPayload } from "jsonwebtoken";
 
-interface JwtPayload {
-  userId: string;
+import { NextFunction, Request, Response } from "express";
+import prisma from "../lib/db.js";
+
+interface DecodedToken extends JwtPayload {
+	userId: string;
 }
 
-export const protectRoute = async (req: AuthRequest, res: Response, next: NextFunction) => {
- try {
-  const token = req.cookies?.jwt || req.headers.cookie?.split(';').find(c => c.trim().startsWith('jwt='))?.split('=')[1];
-
-  if (!token) {
-    return res.status(401).json({ error: 'Unauthorized - No token' });
-  }
-
-  const decoded = jwt.verify(token, process.env.JWT_SECRET as string) as JwtPayload;
-
-  if(!decoded) {
-    return res.status(401).json({ error: 'Unauthorized - Invalid token' });
-  }
-
-  const user = await User.findById(decoded.userId).select('-password');
-  
-  if(!user) {
-    return res.status(401).json({ error: 'Unauthorized - User not found' });
-  }
-
-  req.user = {
-    _id: user._id,
-    email: user.email,
-    fullName: user.fullName,
-    profilePic: user.profilePic || undefined
-  };
-
-  next()
- } catch (error: unknown) {
-  console.error('Error in protectRoute middleware:', error instanceof Error ? error.message : 'Unknown error');
-  res.status(401).json({ error: 'Unauthorized' });
- }
+declare global {
+	namespace Express {
+		export interface Request {
+			user: {
+				id: string;
+			};
+		}
+	}
 }
+
+const protectRoute = async (req: Request, res: Response, next: NextFunction) => {
+	try {
+		const token = req.cookies.jwt;
+
+		if (!token) {
+			return res.status(401).json({ error: "Unauthorized - No token provided" });
+		}
+
+		const decoded = jwt.verify(token, process.env.JWT_SECRET!) as DecodedToken;
+
+		if (!decoded) {
+			return res.status(401).json({ error: "Unauthorized - Invalid Token" });
+		}
+
+		const user = await prisma.user.findUnique({
+			where: { id: decoded.userId },
+			select: { id: true, username: true, fullName: true, profilePic: true },
+		});
+
+		if (!user) {
+			return res.status(404).json({ error: "User not found" });
+		}
+
+		req.user = user;
+
+		next();
+	} catch (error: any) {
+		console.log("Error in protectRoute middleware", error.message);
+		res.status(500).json({ error: "Internal Server Error" });
+	}
+};
+
+export default protectRoute;
