@@ -1,7 +1,7 @@
 import bcryptjs from 'bcryptjs';
 import { Request, Response } from 'express';
 import prisma from '../lib/db.js';
-import { generateToken } from '../utils/generateToken.js';
+import generateToken from '../lib/utils.js';
 
 export const signup = async (req: Request, res: Response) => {
 	try {
