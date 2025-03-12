@@ -5,7 +5,8 @@ A modern real-time chat application built with a powerful tech stack, featuring 
 ## 🚀 Tech Stack
 
 ### Frontend
-- **MERN** stack
+- **PERN** stack
+- **Prisma** for database (with Neon)
 - **Socket.io-client** for real-time communication
 - **TailwindCSS** for styling
 - **Shadcn/UI** for components
@@ -17,7 +18,6 @@ A modern real-time chat application built with a powerful tech stack, featuring 
 - **MongoDB** with Mongoose
 - **Socket.io** for real-time features
 - **JWT** for authentication
-- **Cloudinary** for image uploads
 
 ## ✨ Features
 
@@ -25,10 +25,6 @@ A modern real-time chat application built with a powerful tech stack, featuring 
   - Secure signup and login
   - JWT-based session management
   - Cookie-based token storage
-  
-- 👤 **Profile Management**
-  - Profile picture upload via Cloudinary
-  - User information updates
   
 - 💬 **Real-time Chat**
   - Instant messaging
@@ -49,12 +45,11 @@ A modern real-time chat application built with a powerful tech stack, featuring 
    ```
    Create a `.env` file with:
    ```
-   PORT=your_port
-   MONGODB_URI=your_mongodb_uri
-   JWT_SECRET=your_jwt_secret
-   CLOUDINARY_CLOUD_NAME=your_cloud_name
-   CLOUDINARY_API_KEY=your_api_key
-   CLOUDINARY_API_SECRET=your_api_secret
+   DATABASE_URL="your_database_url"
+   JWT_SECRET=your_secret
+   NODE_ENV=development
+   DATABASE_URL_UNPOOLED="your_database_url"
+
    ```
 
 3. **Frontend Setup**
@@ -81,5 +76,10 @@ A modern real-time chat application built with a powerful tech stack, featuring 
 - `POST /api/auth/signup` - Create new user
 - `POST /api/auth/login` - User login
 - `POST /api/auth/logout` - User logout
-- `PUT /api/auth/update-profile` - Update user profile
-- `GET /api/auth/check` - Check authentication status
+- `GET /api/auth/me` - Check for authenticated user
+
+### Messages
+- `GET /api/messages/conversations` - Get conversations for sidebar
+- `GET /api/messages/:id` - Get messages for a conversation
+- `POST /api/messages/send/:id` - Send a message
+
