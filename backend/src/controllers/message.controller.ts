@@ -1,6 +1,6 @@
-import { Request, Response } from "express";
-import prisma from "../lib/db.js";
-import { getReceiverSocketId, io } from "../socket/socket.js";
+import { Request, Response } from 'express';
+import prisma from '../lib/db.js';
+import { getReceiverSocketId, io } from '../socket/socket.js';
 
 export const sendMessage = async (req: Request, res: Response) => {
 	try {
@@ -53,13 +53,16 @@ export const sendMessage = async (req: Request, res: Response) => {
 		const receiverSocketId = getReceiverSocketId(receiverId);
 
 		if (receiverSocketId) {
-			io.to(receiverSocketId).emit("newMessage", newMessage);
+			io.to(receiverSocketId).emit('newMessage', newMessage);
 		}
 
 		res.status(201).json(newMessage);
 	} catch (error: unknown) {
-		console.error("Error in sendMessage: ", error instanceof Error ? error.message : "Unknown error");
-		res.status(500).json({ error: "Internal server error" });
+		console.error(
+			'Error in sendMessage: ',
+			error instanceof Error ? error.message : 'Unknown error',
+		);
+		res.status(500).json({ error: 'Internal server error' });
 	}
 };
 
@@ -77,7 +80,7 @@ export const getMessages = async (req: Request, res: Response) => {
 			include: {
 				messages: {
 					orderBy: {
-						createdAt: "asc",
+						createdAt: 'asc',
 					},
 				},
 			},
@@ -89,8 +92,11 @@ export const getMessages = async (req: Request, res: Response) => {
 
 		res.status(200).json(conversation.messages);
 	} catch (error: unknown) {
-		console.error("Error in getMessages: ", error instanceof Error ? error.message : "Unknown error");
-		res.status(500).json({ error: "Internal server error" });
+		console.error(
+			'Error in getMessages: ',
+			error instanceof Error ? error.message : 'Unknown error',
+		);
+		res.status(500).json({ error: 'Internal server error' });
 	}
 };
 
@@ -113,7 +119,10 @@ export const getUsersForSidebar = async (req: Request, res: Response) => {
 
 		res.status(200).json(users);
 	} catch (error: unknown) {
-		console.error("Error in getUsersForSidebar: ", error instanceof Error ? error.message : "Unknown error");
-		res.status(500).json({ error: "Internal server error" });
+		console.error(
+			'Error in getUsersForSidebar: ',
+			error instanceof Error ? error.message : 'Unknown error',
+		);
+		res.status(500).json({ error: 'Internal server error' });
 	}
 };
