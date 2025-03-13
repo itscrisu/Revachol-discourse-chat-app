@@ -5,7 +5,6 @@
 	"main": "index.js",
 	"scripts": {
 		"dev": "nodemon --watch src --exec \"node --loader ts-node/esm src/index.ts\"",
-		"build": "tsc && npm install && prisma generate --schema=./backend/prisma/schema.prisma && npm install --prefix frontend && npm run build --prefix frontend",
 		"start": "node backend/dist/src/index.js",
 		"format": "prettier --write \"src/**/*.{js,jsx,ts,tsx,json,css,scss,md}\"",
 		"format:check": "prettier --check \"src/**/*.{js,jsx,ts,tsx,json,css,scss,md}\""

@@ -1,0 +1,11 @@
+{
+  "name": "revachol-discourse",
+  "version": "1.0.0",
+  "description": "A stylized real-time chat application inspired by the world of Disco Elysium, featuring psychological dialogues, detective aesthetics, and mind-to-mind communications.",
+  "main": "index.js",
+  "scripts": {
+    "build": "npm install --prefix backend && npm install --prefix frontend && npm run build --prefix frontend"
+  },
+  "author": "",
+  "license": "ISC"
+}
