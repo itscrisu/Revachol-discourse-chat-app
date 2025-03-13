@@ -4,7 +4,7 @@
     "module": "NodeNext", // What module code should be generated
     "moduleResolution": "NodeNext", // how ts should resolve module imports
     "outDir": "./dist", // redirect output structure to directory
-    "rootDir": ".", // relative to tsconfig.json location
+    "rootDir": "./src", // relative to tsconfig.json location
     "strict": true, // enable all strict type-checking options
     "esModuleInterop": true, // allow use of default imports with CommonJS modules
     "skipLibCheck": true // skip type checking all .d.ts files
