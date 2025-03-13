@@ -3,6 +3,12 @@ import { useState } from "react";
 import toast from "react-hot-toast";
 import useConversation from "../../../zustand/useConversation";
 import useGetConversations from "../../hooks/useGetConversations";
+interface ConversationType {
+	id: string;
+	fullName: string;
+	profilePic: string;
+	emoji?: string;
+}
 
 const SearchInput = () => {
 	const [search, setSearch] = useState("");
@@ -21,7 +27,12 @@ const SearchInput = () => {
 		);
 
 		if (conversation) {
-			setSelectedConversation(conversation);
+			const conversationWithStringId: ConversationType = {
+				...conversation,
+				id: String(conversation.id)
+			};
+			
+			setSelectedConversation(conversationWithStringId);
 			setSearch("");
 		} else toast.error("No such user found!");
 	};

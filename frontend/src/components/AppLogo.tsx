@@ -9,7 +9,6 @@ export const AppLogo: React.FC<AppLogoProps> = ({
   size = 'md', 
   showText = true 
 }) => {
-  // Configurar tamaños
   const sizes = {
     sm: { logo: 32, text: 'text-sm' },
     md: { logo: 40, text: 'text-base' },
